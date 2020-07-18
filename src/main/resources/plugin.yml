@@ -1,0 +1,6 @@
+name: AutoSetSkinTrusted
+main: cn.lanink.autosetskintrusted.AutoSetSkinTrusted
+version: "1.0.0-SNAPSHOT"
+api: ["1.0.9", "1.0.10", "1.0.11"]
+load: POSTWORLD
+author: "LT_Name"
