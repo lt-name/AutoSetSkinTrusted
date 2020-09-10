@@ -7,6 +7,7 @@ import cn.nukkit.entity.EntityHuman;
 import cn.nukkit.entity.data.Skin;
 import cn.nukkit.event.EventHandler;
 import cn.nukkit.event.Listener;
+import cn.nukkit.event.entity.EntitySpawnEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
 import cn.nukkit.network.protocol.PlayerSkinPacket;
 import cn.nukkit.plugin.PluginBase;
@@ -54,6 +55,13 @@ public class AutoSetSkinTrusted extends PluginBase implements Listener {
                 }
             }
         }, 10);
+    }
+
+    @EventHandler
+    public void onEntitySpawn(EntitySpawnEvent event) {
+        if (!event.isCancelled() && event.isHuman()) {
+            ((EntityHuman) event.getEntity()).getSkin().setTrusted(true);
+        }
     }
 
     public static void setPlayerSkin(EntityHuman human, Skin skin) {
