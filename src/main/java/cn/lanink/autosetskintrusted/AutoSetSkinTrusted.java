@@ -6,12 +6,15 @@ import cn.nukkit.Server;
 import cn.nukkit.entity.EntityHuman;
 import cn.nukkit.entity.data.Skin;
 import cn.nukkit.event.EventHandler;
+import cn.nukkit.event.EventPriority;
 import cn.nukkit.event.Listener;
 import cn.nukkit.event.entity.EntitySpawnEvent;
 import cn.nukkit.event.player.PlayerJoinEvent;
 import cn.nukkit.network.protocol.PlayerSkinPacket;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.scheduler.Task;
+
+import java.util.HashSet;
 
 /**
  * @author lt_name
@@ -25,11 +28,15 @@ public class AutoSetSkinTrusted extends PluginBase implements Listener {
     }
 
     @Override
-    public void onEnable() {
+    public void onLoad() {
         autoSetSkinTrusted = this;
-        getServer().getScheduler().scheduleDelayedRepeatingTask(this,
+    }
+
+    @Override
+    public void onEnable() {
+        this.getServer().getScheduler().scheduleDelayedRepeatingTask(this,
                 new CheckEntityTask(this), 200, 1200);
-        getServer().getPluginManager().registerEvents(this, this);
+        this.getServer().getPluginManager().registerEvents(this, this);
     }
 
     @EventHandler
@@ -38,9 +45,11 @@ public class AutoSetSkinTrusted extends PluginBase implements Listener {
         Server.getInstance().getScheduler().scheduleDelayedTask(this, new Task() {
             @Override
             public void onRun(int i) {
-                if (player != null) {
+                if (player != null && player.isOnline()) {
                     Skin skin = player.getSkin();
-                    if (skin == null || skin.isTrusted()) return;
+                    if (skin == null || skin.isTrusted()) {
+                        return;
+                    }
                     switch(skin.getSkinData().data.length) {
                         case 8192:
                         case 16384:
@@ -51,27 +60,39 @@ public class AutoSetSkinTrusted extends PluginBase implements Listener {
                             return;
                     }
                     skin.setTrusted(true);
-                    setPlayerSkin(player, skin);
+                    setHumanSkin(player, skin);
                 }
             }
         }, 10);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntitySpawn(EntitySpawnEvent event) {
-        if (!event.isCancelled() && event.isHuman()) {
-            ((EntityHuman) event.getEntity()).getSkin().setTrusted(true);
+        if (event.isHuman()) {
+            EntityHuman human = (EntityHuman) event.getEntity();
+            Skin skin = human.getSkin();
+            if (skin != null && !skin.isTrusted()) {
+                skin.setTrusted(true);
+                Server.getInstance().getScheduler().scheduleDelayedTask(this,
+                        () -> setHumanSkin(human, skin), 1);
+            }
         }
     }
 
-    public static void setPlayerSkin(EntityHuman human, Skin skin) {
+    public static void setHumanSkin(EntityHuman human, Skin skin) {
         PlayerSkinPacket packet = new PlayerSkinPacket();
         packet.skin = skin;
         packet.newSkinName = skin.getSkinId();
         packet.oldSkinName = human.getSkin().getSkinId();
         packet.uuid = human.getUniqueId();
+        HashSet<Player> players = new HashSet<>(human.getViewers().values());
+        if (human instanceof Player) {
+            players.add((Player) human);
+        }
+        if (!players.isEmpty()) {
+            Server.broadcastPacket(players, packet);
+        }
         human.setSkin(skin);
-        human.getLevel().getPlayers().values().forEach(player -> player.dataPacket(packet));
     }
 
 }

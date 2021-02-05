@@ -25,9 +25,11 @@ public class CheckEntityTask extends PluginTask<AutoSetSkinTrusted> {
                 if (entity instanceof EntityHuman) {
                     EntityHuman entityHuman = (EntityHuman) entity;
                     Skin skin = entityHuman.getSkin();
-                    if (skin == null || skin.isTrusted()) continue;
+                    if (skin == null || skin.isTrusted()) {
+                        continue;
+                    }
                     skin.setTrusted(true);
-                    AutoSetSkinTrusted.setPlayerSkin(entityHuman, skin);
+                    AutoSetSkinTrusted.setHumanSkin(entityHuman, skin);
                 }
             }
         }
