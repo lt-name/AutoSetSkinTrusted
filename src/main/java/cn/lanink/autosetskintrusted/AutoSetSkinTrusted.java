@@ -34,8 +34,8 @@ public class AutoSetSkinTrusted extends PluginBase implements Listener {
 
     @Override
     public void onEnable() {
-        this.getServer().getScheduler().scheduleDelayedRepeatingTask(this,
-                new CheckEntityTask(this), 200, 1200);
+        this.getServer().getScheduler().scheduleRepeatingTask(this,
+                new CheckEntityTask(this), 20);
         this.getServer().getPluginManager().registerEvents(this, this);
     }
 
@@ -66,25 +66,26 @@ public class AutoSetSkinTrusted extends PluginBase implements Listener {
         }, 10);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    //@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntitySpawn(EntitySpawnEvent event) {
         if (event.isHuman()) {
             EntityHuman human = (EntityHuman) event.getEntity();
             Skin skin = human.getSkin();
-            if (skin != null && !skin.isTrusted()) {
-                skin.setTrusted(true);
-                Server.getInstance().getScheduler().scheduleDelayedTask(this,
-                        () -> setHumanSkin(human, skin), 1);
-            }
+            Server.getInstance().getScheduler().scheduleDelayedTask(this, () -> {
+                if (skin != null && !skin.isTrusted()) {
+                    skin.setTrusted(true);
+                    setHumanSkin(human, skin);
+                }
+            }, 20);
         }
     }
 
     public static void setHumanSkin(EntityHuman human, Skin skin) {
         PlayerSkinPacket packet = new PlayerSkinPacket();
+        packet.uuid = human.getUniqueId();
         packet.skin = skin;
         packet.newSkinName = skin.getSkinId();
         packet.oldSkinName = human.getSkin().getSkinId();
-        packet.uuid = human.getUniqueId();
         HashSet<Player> players = new HashSet<>(human.getViewers().values());
         if (human instanceof Player) {
             players.add((Player) human);
